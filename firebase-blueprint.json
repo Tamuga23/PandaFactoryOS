@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Store inventory product",
+      "type": "object",
+      "properties": {
+        "sku": { "type": "string", "maxLength": 50 },
+        "name": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "price": { "type": "number", "minimum": 0 },
+        "cost": { "type": "number", "minimum": 0 },
+        "stock": { "type": "integer", "minimum": 0 },
+        "minStockAlert": { "type": "integer", "minimum": 0 },
+        "category": { "type": "string", "maxLength": 50 },
+        "imageBase64": { "type": "string", "maxLength": 1048576 },
+        "createdAt": { "type": "integer" },
+        "updatedAt": { "type": "integer" },
+        "ownerId": { "type": "string", "description": "The UID of the user who owns the store/product" }
+      },
+      "required": ["sku", "name", "price", "cost", "stock", "minStockAlert", "category", "createdAt", "updatedAt", "ownerId"]
+    },
+    "SaleItem": {
+      "title": "SaleItem",
+      "description": "An item in a sale",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sku": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "quantity": { "type": "integer" },
+        "imageBase64": { "type": "string" }
+      },
+      "required": ["id", "sku", "name", "price", "quantity"]
+    },
+    "Sale": {
+      "title": "Sale",
+      "description": "A completed sale",
+      "type": "object",
+      "properties": {
+        "date": { "type": "integer" },
+        "items": { 
+          "type": "array", 
+          "items": { "$ref": "#/entities/SaleItem" },
+          "maxItems": 100
+        },
+        "subtotal": { "type": "number" },
+        "tax": { "type": "number" },
+        "total": { "type": "number" },
+        "customerName": { "type": "string", "maxLength": 100 },
+        "customerEmail": { "type": "string", "maxLength": 100 },
+        "invoiceNumber": { "type": "string", "maxLength": 50 },
+        "ownerId": { "type": "string", "description": "The UID of the user who recorded the sale" }
+      },
+      "required": ["date", "items", "subtotal", "tax", "total", "invoiceNumber", "ownerId"]
+    }
+  },
+  "firestore": {
+    "products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Products in the store's inventory"
+    },
+    "sales/{saleId}": {
+      "schema": { "$ref": "#/entities/Sale" },
+      "description": "Recorded sales"
+    }
+  }
+}

@@ -15,8 +15,10 @@ export interface InvoiceItem {
 }
 
 export interface InvoiceData {
+  type: 'RECIBO_OFICIAL' | 'PROFORMA';
   invoiceNumber: string;
   date: string;
+  validUntil?: string; // used for PROFORMA
   client: {
     fullName: string;
     address: string;
@@ -125,7 +127,8 @@ export default function InvoicePreview({ data, isOpen, onClose }: InvoicePreview
         pdf.addImage(dUrl, 'PNG', 0, 0, 794, 1123);
       }
 
-      pdf.save(`Factura_${data.invoiceNumber}.pdf`);
+      const fileName = data.type === 'PROFORMA' ? `Proforma_${data.invoiceNumber}.pdf` : `Factura_${data.invoiceNumber}.pdf`;
+      pdf.save(fileName);
     } catch (err) {
       console.error('Error al generar PDF:', err);
       alert('Hubo un error al generar el PDF. Por favor, intente nuevamente.');
@@ -172,15 +175,23 @@ export default function InvoicePreview({ data, isOpen, onClose }: InvoicePreview
                   {/* Top Header Row */}
                   <div className="flex justify-between items-start">
                     <div>
-                      <h1 className="text-4xl font-extrabold text-[#1a6ba0] tracking-tight mb-6">Factura</h1>
+                      <h1 className="text-4xl font-extrabold text-[#1a6ba0] tracking-tight mb-6">
+                        {data.type === 'PROFORMA' ? 'Cotización' : 'Factura'}
+                      </h1>
                       <div className="flex items-center gap-4 text-xs font-semibold text-zinc-700">
-                        <span className="w-24">Factura No #</span>
+                        <span className="w-24">{data.type === 'PROFORMA' ? 'Cotización No #' : 'Factura No #'}</span>
                         <span className="text-black font-bold uppercase">{data.invoiceNumber}</span>
                       </div>
                       <div className="flex items-center gap-4 text-xs font-semibold text-zinc-700 mt-2">
                         <span className="w-24">Fecha:</span>
                         <span className="text-black font-bold">{data.date}</span>
                       </div>
+                      {data.type === 'PROFORMA' && data.validUntil && (
+                        <div className="flex items-center gap-4 text-xs font-semibold text-rose-600 mt-2">
+                          <span className="w-24">Válido hasta:</span>
+                          <span className="font-bold">{data.validUntil}</span>
+                        </div>
+                      )}
                     </div>
                     
                     {/* Logo Section */}

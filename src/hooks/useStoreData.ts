@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { db, auth, handleFirestoreError } from '../lib/db';
-import { collection, onSnapshot, query, setDoc, doc, updateDoc, deleteDoc, writeBatch, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, setDoc, doc, updateDoc, deleteDoc, writeBatch, runTransaction, where } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { Product, Sale, DashboardStats } from '../types';
+import { Product, Sale, Purchase, CompanyInfo, DashboardStats } from '../types';
 
 export function useStoreData() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -127,26 +127,49 @@ export function useStoreData() {
   const recordSale = async (sale: Omit<Sale, 'ownerId'>) => {
     if (!user) return;
     try {
-      const batch = writeBatch(db);
-      
       const fullSale = { ...sale, ownerId: user.uid, status: sale.status || 'completed' };
-      batch.set(doc(db, 'sales', sale.id), fullSale);
+      const saleRef = doc(db, 'sales', sale.id);
 
-      // Deduct stock safely
-      sale.items.forEach(item => {
-        const productRef = doc(db, 'products', item.id);
-        const p = products.find(prod => prod.id === item.id);
-        if (p) {
-          batch.update(productRef, {
-            stock: p.stock - item.quantity,
-            updatedAt: Date.now()
-          });
-        }
+      // Pilar 3: Transacción atómica
+      await runTransaction(db, async (transaction) => {
+        const productRefs = sale.items.map(item => ({
+          ref: doc(db, 'products', item.id),
+          item
+        }));
+
+        // 1. Read all required documents first (Requirement of Firestore transactions)
+        const productDocs = await Promise.all(productRefs.map(pr => transaction.get(pr.ref)));
+
+        // 2. Perform validations (skip stock check for PROFORMA)
+        productDocs.forEach((pDoc, index) => {
+          if (!pDoc.exists()) {
+            throw new Error(`Product ${productRefs[index].item.name} does not exist in DB.`);
+          }
+          const productData = pDoc.data() as Product;
+          if (sale.documentType !== 'PROFORMA' && productData.stock < productRefs[index].item.quantity) {
+             throw new Error(`Insufficient stock for ${productData.name}. Requested: ${productRefs[index].item.quantity}, Available: ${productData.stock}`);
+          }
+        });
+
+        // 3. Perform all writes
+        productDocs.forEach((pDoc, index) => {
+          if (sale.documentType !== 'PROFORMA') {
+            const productData = pDoc.data() as Product;
+            const newStock = productData.stock - productRefs[index].item.quantity;
+            transaction.update(productRefs[index].ref, {
+               stock: newStock,
+               updatedAt: Date.now()
+            });
+          }
+        });
+
+        transaction.set(saleRef, fullSale);
       });
 
-      await batch.commit();
     } catch (e) {
+      console.error("Transaction failed: ", e);
       handleFirestoreError(e, 'create', `sales/${sale.id}`);
+      throw e; // Rethrow allowing the UI to handle it if needed
     }
   };
 
@@ -184,13 +207,16 @@ export function useStoreData() {
     }
   };
 
-  const stats: DashboardStats = useMemo(() => ({
-    totalProducts: products.length,
-    totalStockValue: products.reduce((acc, p) => acc + (p.price * p.stock), 0),
-    lowStockItems: products.filter(p => p.stock <= p.minStockAlert),
-    recentSales: [...sales].sort((a, b) => b.date - a.date).slice(0, 5),
-    totalSalesValue: sales.reduce((acc, s) => acc + (s.status === 'completed' ? s.total : 0), 0),
-  }), [products, sales]);
+  const stats: DashboardStats = useMemo(() => {
+    const realSales = sales.filter(s => s.documentType !== 'PROFORMA');
+    return {
+      totalProducts: products.length,
+      totalStockValue: products.reduce((acc, p) => acc + (p.price * p.stock), 0),
+      lowStockItems: products.filter(p => p.stock <= p.minStockAlert),
+      recentSales: [...realSales].sort((a, b) => b.date - a.date).slice(0, 5),
+      totalSalesValue: realSales.reduce((acc, s) => acc + (s.status === 'completed' ? s.total : 0), 0),
+    };
+  }, [products, sales]);
 
   return {
     user,

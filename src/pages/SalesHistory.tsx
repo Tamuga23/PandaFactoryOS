@@ -11,8 +11,9 @@ export default function SalesHistory() {
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
 
   const filteredSales = sales.filter(s => 
-    s.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.customerName?.toLowerCase().includes(searchTerm.toLowerCase())
+    s.documentType !== 'PROFORMA' &&
+    (s.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    s.customerName?.toLowerCase().includes(searchTerm.toLowerCase()))
   ).sort((a, b) => b.date - a.date);
 
   const handleDelete = async (id: string) => {

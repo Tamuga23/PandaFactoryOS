@@ -117,11 +117,23 @@ export default function POS() {
   const tax = subtotal * taxRate;
   const total = subtotal + tax + shipping - discount;
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (isProforma: boolean = false) => {
     if (cart.length === 0) return;
 
     const newInvoiceNumber = `A00${Math.floor(Math.random() * 1000) + 1000}`;
-    const sale: Sale = {
+    // Fetch default exchange rate from company config, fallback to 36.6243
+    const currentExchangeRate = companyInfo?.defaultExchangeRate || 36.6243;
+    
+    // Calculate validity if it's a proforma (10 days from now)
+    let validUntilDateStr: undefined | string = undefined;
+    if (isProforma) {
+        const validityDate = new Date();
+        validityDate.setDate(validityDate.getDate() + 10);
+        validUntilDateStr = validityDate.toLocaleDateString('es-ES');
+    }
+
+    // Defaulting missing UI fields to satisfy Pilar 1 type requirements for now
+    const sale: Omit<Sale, "ownerId"> = {
       id: uuidv4(),
       date: Date.now(),
       items: [...cart],
@@ -135,15 +147,29 @@ export default function POS() {
       customerPhone,
       customerAddress,
       transport,
-      invoiceNumber: newInvoiceNumber
+      invoiceNumber: newInvoiceNumber,
+      
+      documentType: isProforma ? 'PROFORMA' : 'RECIBO_OFICIAL',
+      clientDocumentType: 'NINGUNO',
+      currency: 'NIO',
+      exchangeRate: currentExchangeRate,
+      paymentMethod: 'EFECTIVO',
+      status: 'completed'
     };
 
-    await recordSale(sale);
+    try {
+        await recordSale(sale);
+    } catch (e) {
+        alert("Transaction could not be completed. Stock might be insufficient.");
+        return;
+    }
     
     // Prepare data for the preview component
     const invoiceData: InvoiceData = {
+      type: isProforma ? 'PROFORMA' : 'RECIBO_OFICIAL',
       invoiceNumber: newInvoiceNumber,
       date: new Date(sale.date).toLocaleDateString('es-ES'),
+      validUntil: validUntilDateStr,
       client: {
         fullName: sale.customerName || 'CLIENTE FINAL',
         address: sale.customerAddress || 'Dirección no proporcionada',
@@ -411,14 +437,24 @@ export default function POS() {
             </div>
           </div>
 
-          <button
-            onClick={handleCheckout}
-            disabled={cart.length === 0}
-            className="w-full mt-4 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-lg shadow-lg shadow-cyan-900/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed text-sm sm:text-base"
-          >
-            GENERATE INVOICE
-            <FileText className="w-4 h-4" />
-          </button>
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={() => handleCheckout(false)}
+              disabled={cart.length === 0}
+              className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-lg shadow-lg shadow-cyan-900/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed text-sm sm:text-base"
+            >
+              FACTURAR
+              <FileText className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleCheckout(true)}
+              disabled={cart.length === 0}
+              title="Generar Proforma (Cotización)"
+              className="w-14 bg-zinc-800 hover:bg-zinc-700 text-sky-400 font-bold py-3 rounded-lg border border-zinc-700 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FileText className="w-5 h-5" />
+            </button>
+          </div>
           <p className="text-[10px] text-zinc-500 text-center mt-2 italic">Includes auto-check for stock availability</p>
         </div>
       </div>

@@ -18,8 +18,9 @@ export default function Reports() {
   const { sales, products, loading } = useStoreData();
 
   const salesData = useMemo(() => {
-    // Group sales by day for the chart
-    const grouped = sales.reduce((acc, sale) => {
+    // Group sales by day for the chart (excluding PROFORMAS)
+    const realSales = sales.filter(s => s.documentType !== 'PROFORMA');
+    const grouped = realSales.reduce((acc, sale) => {
       const date = format(new Date(sale.date), 'MMM dd');
       if (!acc[date]) {
         acc[date] = { date, total: 0, count: 0 };
@@ -106,7 +107,7 @@ export default function Reports() {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
-              {sales.slice().reverse().map((sale) => (
+              {sales.filter(s => s.documentType !== 'PROFORMA').slice().reverse().map((sale) => (
                 <tr key={sale.id} className="hover:bg-zinc-800/30">
                   <td className="px-4 py-3 font-medium text-cyan-400">{sale.invoiceNumber}</td>
                   <td className="px-4 py-3 text-zinc-500">{format(sale.date, 'MMM dd, yyyy h:mm a')}</td>
@@ -115,7 +116,7 @@ export default function Reports() {
                   <td className="px-4 py-3 text-right font-medium text-zinc-200">{formatCurrency(sale.total)}</td>
                 </tr>
               ))}
-              {sales.length === 0 && (
+              {sales.filter(s => s.documentType !== 'PROFORMA').length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-6 py-8 text-center text-sm text-zinc-500">No sales recorded yet.</td>
                 </tr>

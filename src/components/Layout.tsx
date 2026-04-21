@@ -28,8 +28,11 @@ export default function Layout({ children }: { children: ReactNode }) {
       <div className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col hidden md:flex">
         <div className="p-6 border-b border-zinc-800">
           <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
-            <img src={logoSrc} alt="pandastore" className="w-8 h-8 rounded-full object-cover border border-zinc-800" onError={(e) => { e.currentTarget.style.display='none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
-            <Store className="w-6 h-6 text-cyan-400 hidden" />
+            {companyInfo?.logoBase64 ? (
+              <img src={companyInfo.logoBase64} alt="pandastore" className="w-8 h-8 rounded-full object-cover border border-zinc-800 bg-white" />
+            ) : (
+              <Store className="w-6 h-6 text-cyan-400" />
+            )}
             <span className="text-white">panda</span><span className="-ml-1 bg-gradient-to-r from-cyan-400 to-[#0a85a8] bg-clip-text text-transparent">store</span>
           </h1>
         </div>

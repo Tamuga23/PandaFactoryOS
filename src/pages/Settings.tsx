@@ -13,6 +13,7 @@ export default function Settings() {
     address: 'Camino de Oriente, Detrás de INISER en Colectivo Dreamy',
     email: 'pandastorenic@gmail.com',
     logoBase64: '',
+    defaultExchangeRate: 36.6243, // Pilar 4: Tasa congelada
   });
 
   useEffect(() => {
@@ -23,6 +24,7 @@ export default function Settings() {
         address: companyInfo.address,
         email: companyInfo.email,
         logoBase64: companyInfo.logoBase64,
+        defaultExchangeRate: companyInfo.defaultExchangeRate || 36.6243,
       });
     }
   }, [companyInfo]);
@@ -124,6 +126,27 @@ export default function Settings() {
                 onChange={e => setFormData(p => ({ ...p, email: e.target.value }))}
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-3 text-zinc-100 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all font-medium"
               />
+            </div>
+
+            <div className="space-y-4">
+              <label className="text-xs font-bold text-zinc-400 uppercase">Configuración Fiscal</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-400 uppercase flex items-center gap-2">
+                    Tasa de Cambio Oficial (USD a NIO)
+                  </label>
+                  <input
+                    required
+                    type="number"
+                    step="0.0001"
+                    min="1"
+                    value={formData.defaultExchangeRate}
+                    onChange={e => setFormData(p => ({ ...p, defaultExchangeRate: parseFloat(e.target.value) || 0 }))}
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-3 text-zinc-100 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all font-medium"
+                  />
+                  <p className="text-[10px] text-zinc-500">Tasa de cambio del BCN congelada por ley (Ej. 36.6243).</p>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-4">

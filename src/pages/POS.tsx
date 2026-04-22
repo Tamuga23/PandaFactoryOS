@@ -156,10 +156,11 @@ export default function POS() {
       
       documentType: isProforma ? 'PROFORMA' : 'RECIBO_OFICIAL',
       clientDocumentType: 'NINGUNO',
-      currency: 'NIO',
+      currency: 'USD',
       exchangeRate: currentExchangeRate,
       paymentMethod: 'EFECTIVO',
-      status: 'completed'
+      status: 'completed',
+      notes: customNote
     };
 
     try {
@@ -192,13 +193,13 @@ export default function POS() {
         id: i.id,
         productName: i.name,
         quantity: i.quantity,
-        priceNIO: i.price,
-        priceUSD: Number((i.price / 36.6).toFixed(2)),
+        priceNIO: i.price * currentExchangeRate, // Calculate NIO value for receipt
+        priceUSD: i.price,
         image: i.imageBase64,
         sku: i.sku
       })),
-      shippingCostNIO: sale.shipping || 0,
-      discountNIO: sale.discount || 0,
+      shippingCostNIO: (sale.shipping || 0) * currentExchangeRate,
+      discountNIO: (sale.discount || 0) * currentExchangeRate,
       customNote: customNote, // Passed dynamically from checkout panel
       warrantyText: "1. Los productos vendidos por Panda Store tienen una garantía de [3] meses a partir de la fecha de compra.\n2. La garantía cubre defectos de fabricación y no incluye daños causados por mal uso o accidentes."
     };
@@ -437,7 +438,7 @@ export default function POS() {
             )}
             <div className="h-px bg-zinc-700 my-2"></div>
             <div className="flex justify-between font-bold text-sm sm:text-lg text-zinc-100 mt-2">
-              <span>TOTAL (C$)</span>
+              <span>TOTAL (USD)</span>
               <span className="text-sky-400">{formatCurrency(total)}</span>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { jsPDF } from 'jspdf';
 import * as htmlToImage from 'html-to-image';
-import { formatCurrency } from '../lib/utils';
+import { formatCurrencyNIO } from '../lib/utils';
 import { Download, X, Loader2 } from 'lucide-react';
 
 export interface InvoiceItem {
@@ -47,11 +47,11 @@ interface InvoicePreviewProps {
 }
 
 const PAGE_HEIGHT_LIMIT = 980;
-const HEADER_HEIGHT = 340;
-const FOOTER_HEIGHT = 310;
-const TABLE_HEADER_HEIGHT = 45;
-const ITEM_WITH_IMAGE_HEIGHT = 125;
-const ITEM_WITHOUT_IMAGE_HEIGHT = 65;
+const HEADER_HEIGHT = 220; // Reduced from 340
+const FOOTER_HEIGHT = 200; // Reduced from 310
+const TABLE_HEADER_HEIGHT = 35; // Reduced from 45
+const ITEM_WITH_IMAGE_HEIGHT = 65; // Reduced from 125
+const ITEM_WITHOUT_IMAGE_HEIGHT = 40; // Reduced from 65
 
 export default function InvoicePreview({ data, isOpen, onClose }: InvoicePreviewProps) {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -173,21 +173,21 @@ export default function InvoicePreview({ data, isOpen, onClose }: InvoicePreview
               {page.showHeader && (
                 <div style={{ minHeight: `${HEADER_HEIGHT}px` }} className="w-full flex flex-col gap-6 shrink-0 relative z-10">
                   {/* Top Header Row */}
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h1 className="text-4xl font-extrabold text-[#1a6ba0] tracking-tight mb-6">
+                      <h1 className="text-3xl font-extrabold text-[#1a6ba0] tracking-tight mb-4">
                         {data.type === 'PROFORMA' ? 'Cotización' : 'Factura'}
                       </h1>
-                      <div className="flex items-center gap-4 text-xs font-semibold text-zinc-700">
+                      <div className="flex items-center gap-4 text-[11px] font-semibold text-zinc-700">
                         <span className="w-24">{data.type === 'PROFORMA' ? 'Cotización No #' : 'Factura No #'}</span>
                         <span className="text-black font-bold uppercase">{data.invoiceNumber}</span>
                       </div>
-                      <div className="flex items-center gap-4 text-xs font-semibold text-zinc-700 mt-2">
+                      <div className="flex items-center gap-4 text-[11px] font-semibold text-zinc-700 mt-1">
                         <span className="w-24">Fecha:</span>
                         <span className="text-black font-bold">{data.date}</span>
                       </div>
                       {data.type === 'PROFORMA' && data.validUntil && (
-                        <div className="flex items-center gap-4 text-xs font-semibold text-rose-600 mt-2">
+                        <div className="flex items-center gap-4 text-[11px] font-semibold text-rose-600 mt-1">
                           <span className="w-24">Válido hasta:</span>
                           <span className="font-bold">{data.validUntil}</span>
                         </div>
@@ -196,12 +196,12 @@ export default function InvoicePreview({ data, isOpen, onClose }: InvoicePreview
                     
                     {/* Logo Section */}
                     {data.companyInfo?.logo ? (
-                      <div className="w-32 h-32 bg-zinc-900 rounded-2xl flex items-center justify-center p-3 shadow-md">
+                      <div className="w-24 h-24 bg-zinc-900 rounded-xl flex items-center justify-center p-2 shadow-md">
                         <img src={data.companyInfo.logo} alt="Logo" className="max-w-full max-h-full object-contain" />
                       </div>
                     ) : (
-                      <div className="w-32 h-32 bg-zinc-900 rounded-2xl flex flex-col items-center justify-center p-3 shadow-md text-white">
-                        <span className="font-bold text-[11px] uppercase tracking-widest leading-tight text-center">
+                      <div className="w-24 h-24 bg-zinc-900 rounded-xl flex flex-col items-center justify-center p-2 shadow-md text-white">
+                        <span className="font-bold text-[9px] uppercase tracking-widest leading-tight text-center">
                           {data.companyInfo?.name || 'STORE'}
                         </span>
                       </div>
@@ -211,36 +211,36 @@ export default function InvoicePreview({ data, isOpen, onClose }: InvoicePreview
                   {/* Info Boxes */}
                   <div className="grid grid-cols-2 gap-4">
                     {/* Facturado Por */}
-                    <div className="bg-[#dff3fa] p-5 rounded-2xl shadow-sm border border-[#a2d8ed]">
-                      <h3 className="text-[10px] font-bold text-[#1a6ba0] uppercase tracking-wider mb-2">Facturado Por:</h3>
-                      <p className="text-xs font-extrabold text-zinc-900 mb-1">{data.companyInfo?.name || 'Empresa'}</p>
-                      <p className="text-[11px] text-zinc-600 leading-snug max-w-[90%]">
+                    <div className="bg-[#dff3fa] p-3 rounded-xl shadow-sm border border-[#a2d8ed]">
+                      <h3 className="text-[9px] font-bold text-[#1a6ba0] uppercase tracking-wider mb-1">Facturado Por:</h3>
+                      <p className="text-[11px] font-extrabold text-zinc-900 mb-0.5">{data.companyInfo?.name || 'Empresa'}</p>
+                      <p className="text-[10px] text-zinc-600 leading-tight max-w-[90%] mb-1">
                         {data.companyInfo?.address || 'Dirección de la empresa'}
                       </p>
-                      <div className="flex mt-2 text-[11px] text-zinc-700 leading-snug">
-                        <span className="font-bold w-14">Correo:</span>
+                      <div className="flex text-[10px] text-zinc-700 leading-tight">
+                        <span className="font-bold w-12">Correo:</span>
                         <span>{data.companyInfo?.email || 'N/A'}</span>
                       </div>
-                      <div className="flex mt-1 text-[11px] text-zinc-700 leading-snug">
-                        <span className="font-bold w-14">Teléfono:</span>
+                      <div className="flex text-[10px] text-zinc-700 leading-tight mt-0.5">
+                        <span className="font-bold w-12">Teléfono:</span>
                         <span>{data.companyInfo?.phone || 'N/A'}</span>
                       </div>
                     </div>
                     
                     {/* Facturado A */}
-                    <div className="bg-[#dff3fa] p-5 rounded-2xl shadow-sm border border-[#a2d8ed]">
-                      <h3 className="text-[10px] font-bold text-[#1a6ba0] uppercase tracking-wider mb-2">Facturado A:</h3>
-                      <p className="text-xs font-extrabold text-zinc-900 mb-1">{data.client.fullName.toUpperCase() || 'CLIENTE FINAL'}</p>
-                      <div className="flex mt-2 text-[11px] text-zinc-700 leading-snug">
-                        <span className="font-bold min-w-[60px]">Dirección:</span>
-                        <span className="leading-snug line-clamp-2 pr-2">{data.client.address || 'N/A'}</span>
+                    <div className="bg-[#dff3fa] p-3 rounded-xl shadow-sm border border-[#a2d8ed]">
+                      <h3 className="text-[9px] font-bold text-[#1a6ba0] uppercase tracking-wider mb-1">Facturado A:</h3>
+                      <p className="text-[11px] font-extrabold text-zinc-900 mb-0.5">{data.client.fullName.toUpperCase() || 'CLIENTE FINAL'}</p>
+                      <div className="flex text-[10px] text-zinc-700 leading-tight">
+                        <span className="font-bold min-w-[55px]">Dirección:</span>
+                        <span className="leading-tight line-clamp-2 pr-2">{data.client.address || 'N/A'}</span>
                       </div>
-                      <p className="text-[11px] text-zinc-700 mt-1 ml-[60px] leading-snug">
+                      <p className="text-[10px] text-zinc-700 ml-[55px] leading-tight mb-1">
                         {data.client.phone || ''}
                       </p>
-                      <div className="flex mt-2 text-[11px] text-zinc-700 items-center leading-snug">
-                        <span className="font-bold min-w-[65px]">Transporte:</span>
-                        <span className="text-[#1a6ba0] font-bold uppercase py-0.5 px-3 border border-[#a2d8ed] bg-white rounded-full ml-1 text-[9px] tracking-wider shadow-sm">{data.client.transport || 'ENTREGA LOCAL'}</span>
+                      <div className="flex text-[10px] text-zinc-700 items-center leading-tight">
+                        <span className="font-bold min-w-[60px]">Transporte:</span>
+                        <span className="text-[#1a6ba0] font-bold uppercase py-0.5 px-2 border border-[#a2d8ed] bg-white rounded-full ml-1 text-[8px] tracking-wider shadow-sm">{data.client.transport || 'ENTREGA LOCAL'}</span>
                       </div>
                     </div>
                   </div>
@@ -253,15 +253,15 @@ export default function InvoicePreview({ data, isOpen, onClose }: InvoicePreview
               )}
 
               {/* TABLE */}
-              <div className="w-full flex-1 mb-6 rounded-2xl overflow-hidden border border-[#135c7a]/20 shadow-sm">
-                <table className="w-full text-xs text-left">
+              <div className="w-full flex-1 mb-4 rounded-xl overflow-hidden border border-[#135c7a]/20 shadow-sm">
+                <table className="w-full text-left" style={{ tableLayout: 'fixed' }}>
                   <thead className="bg-[#135c7a] text-white">
                     <tr style={{ height: `${TABLE_HEADER_HEIGHT}px` }}>
-                      <th className="px-4 py-3 font-bold text-[10px] uppercase tracking-wider text-center w-[40%]">Articulo</th>
-                      <th className="px-2 py-3 text-center font-bold text-[10px] uppercase tracking-wider w-16">Cant.</th>
-                      <th className="px-2 py-3 text-center font-bold text-[10px] uppercase tracking-wider w-24">Precio C$</th>
-                      <th className="px-2 py-3 text-center font-bold text-[10px] uppercase tracking-wider w-24">Precio $</th>
-                      <th className="px-2 py-3 text-center font-bold text-[10px] uppercase tracking-wider w-24">Total</th>
+                      <th className="px-3 py-2 font-bold text-[9px] uppercase tracking-wider text-left w-[47%]">Articulo</th>
+                      <th className="px-2 py-2 text-center font-bold text-[9px] uppercase tracking-wider w-[10%]">Cant.</th>
+                      <th className="px-2 py-2 text-center font-bold text-[9px] uppercase tracking-wider w-[15%]">Precio C$</th>
+                      <th className="px-2 py-2 text-center font-bold text-[9px] uppercase tracking-wider w-[13%]">Precio $</th>
+                      <th className="px-2 py-2 text-center font-bold text-[9px] uppercase tracking-wider w-[15%]">Total</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white">
@@ -270,36 +270,27 @@ export default function InvoicePreview({ data, isOpen, onClose }: InvoicePreview
                       const hasImage = !!item.image;
                       
                       return (
-                        <React.Fragment key={item.id + idx}>
-                          <tr>
-                            <td colSpan={5} className="pt-4 px-4 pb-1">
-                              <div className="flex items-center gap-3">
-                                <span className="w-5 h-5 rounded-full bg-[#dff3fa] text-[#1a6ba0] text-[9px] font-bold flex items-center justify-center shrink-0 border border-[#a2d8ed]/50 shadow-sm">
-                                  {absoluteIndex}
-                                </span>
-                                <span className="font-bold text-zinc-900 leading-none">{item.productName}</span>
-                              </div>
-                            </td>
-                          </tr>
-                          <tr 
-                            style={{ height: `${(hasImage ? ITEM_WITH_IMAGE_HEIGHT : ITEM_WITHOUT_IMAGE_HEIGHT) - 35}px` }}
-                            className="border-b border-zinc-100 last:border-0"
-                          >
-                            <td className="px-4 pb-4">
-                              {hasImage && (
-                                <div className="ml-8 w-16 h-16 rounded-xl border border-zinc-200 bg-zinc-50 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm p-1">
-                                  <img src={item.image} alt="product" className="max-w-full max-h-full object-contain mix-blend-multiply rounded-lg" />
+                        <tr key={item.id + idx} className="border-b border-zinc-100 last:border-0 align-top">
+                          <td className="px-3 py-2">
+                            <div className="flex items-start gap-2">
+                              <span className="w-4 h-4 rounded-full bg-[#dff3fa] text-[#1a6ba0] text-[8px] font-bold flex items-center justify-center shrink-0 border border-[#a2d8ed]/50 shadow-sm mt-0.5">
+                                {absoluteIndex}
+                              </span>
+                              {(hasImage && item.image) && (
+                                <div className="w-10 h-10 rounded-lg border border-zinc-200 bg-zinc-50 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm p-0.5 mt-0.5">
+                                  <img src={item.image} alt="product" className="max-w-full max-h-full object-contain mix-blend-multiply rounded-md" />
                                 </div>
                               )}
-                            </td>
-                            <td className="px-2 pb-4 text-center font-bold text-zinc-600 align-middle">{item.quantity}</td>
-                            <td className="px-2 pb-4 text-center font-bold text-zinc-600 align-middle">{formatCurrency(item.priceNIO)}</td>
-                            <td className="px-2 pb-4 text-center font-bold text-zinc-600 align-middle">${item.priceUSD.toFixed(2)}</td>
-                            <td className="px-2 pb-4 text-center font-bold text-[#135c7a] align-middle">
-                              {formatCurrency(item.priceNIO * item.quantity)}
-                            </td>
-                          </tr>
-                        </React.Fragment>
+                              <span className="font-bold text-zinc-900 text-[10px] leading-tight break-words pt-1">{item.productName}</span>
+                            </div>
+                          </td>
+                          <td className="px-2 py-2 text-center font-bold text-zinc-600 text-[10px] pt-3">{item.quantity}</td>
+                          <td className="px-2 py-2 text-center font-bold text-zinc-600 text-[10px] pt-3">{formatCurrencyNIO(item.priceNIO)}</td>
+                          <td className="px-2 py-2 text-center font-bold text-zinc-600 text-[10px] pt-3">${item.priceUSD.toFixed(2)}</td>
+                          <td className="px-2 py-2 text-center font-bold text-[#135c7a] text-[10px] pt-3">
+                            {formatCurrencyNIO(item.priceNIO * item.quantity)}
+                          </td>
+                        </tr>
                       );
                     })}
                   </tbody>
@@ -314,31 +305,31 @@ export default function InvoicePreview({ data, isOpen, onClose }: InvoicePreview
                          <div className="flex justify-between items-stretch gap-6 mb-8 mt-2">
                            {/* NOTE BOX */}
                            {data.customNote ? (
-                             <div className="flex-1 border border-[#d2eaf4] bg-white rounded-2xl flex p-4 shadow-sm items-start gap-4">
-                                <span className="bg-[#eef8fc] text-[#1a6ba0] font-bold text-[9px] px-3 py-1 rounded-full shadow-sm border border-[#d2eaf4]">NOTA</span>
-                                <span className="text-[11px] italic text-zinc-600 flex-1 leading-snug mt-0.5 whitespace-pre-wrap">{data.customNote}</span>
+                             <div className="flex-1 border border-[#d2eaf4] bg-white rounded-xl flex p-3 shadow-sm items-start gap-3">
+                                <span className="bg-[#eef8fc] text-[#1a6ba0] font-bold text-[8px] px-2 py-0.5 rounded-full shadow-sm border border-[#d2eaf4] shrink-0">NOTA</span>
+                                <span className="text-[10px] italic text-zinc-600 flex-1 leading-tight mt-0.5 whitespace-pre-wrap">{data.customNote}</span>
                              </div>
                            ) : <div className="flex-1" />}
 
                            {/* TOTALS BOX */}
-                           <div className="w-[340px] border border-zinc-100 bg-white shadow-sm p-5 rounded-2xl shrink-0">
-                              <div className="space-y-4">
-                                 <div className="flex justify-between items-center text-xs font-semibold text-zinc-500">
+                           <div className="w-[280px] border border-zinc-100 bg-white shadow-sm p-4 rounded-xl shrink-0">
+                              <div className="space-y-3">
+                                 <div className="flex justify-between items-center text-[11px] font-semibold text-zinc-500">
                                    <span>Monto Bruto</span>
-                                   <span className="text-zinc-900">{formatCurrency(subtotal)}</span>
+                                   <span className="text-zinc-900">{formatCurrencyNIO(subtotal)}</span>
                                  </div>
-                                 <div className="flex justify-between items-center text-xs font-semibold text-zinc-500">
+                                 <div className="flex justify-between items-center text-[11px] font-semibold text-zinc-500">
                                    <span>Costo de Envío</span>
-                                   <span className="text-zinc-900">{data.shippingCostNIO > 0 ? formatCurrency(data.shippingCostNIO) : 'C$0.00'}</span>
+                                   <span className="text-zinc-900">{data.shippingCostNIO > 0 ? formatCurrencyNIO(data.shippingCostNIO) : 'C$0.00'}</span>
                                  </div>
-                                 <div className="flex justify-between items-center text-xs font-semibold text-rose-600">
+                                 <div className="flex justify-between items-center text-[11px] font-semibold text-rose-600">
                                    <span>Descuento</span>
-                                   <span>{data.discountNIO > 0 ? `-${formatCurrency(data.discountNIO)}` : '-C$0.00'}</span>
+                                   <span>{data.discountNIO > 0 ? `-${formatCurrencyNIO(data.discountNIO)}` : '-C$0.00'}</span>
                                  </div>
-                                 <div className="h-px bg-zinc-100 w-full my-3"></div>
-                                 <div className="flex justify-between items-center font-extrabold uppercase mt-1">
-                                   <span className="text-zinc-900 text-xs">TOTAL (C$)</span>
-                                   <span className="text-[#135c7a] text-lg">{formatCurrency(total)}</span>
+                                 <div className="h-px bg-zinc-100 w-full my-2"></div>
+                                 <div className="flex justify-between items-center font-extrabold uppercase pt-1">
+                                   <span className="text-zinc-900 text-[11px]">TOTAL (C$)</span>
+                                   <span className="text-[#135c7a] text-base">{formatCurrencyNIO(total)}</span>
                                  </div>
                               </div>
                            </div>

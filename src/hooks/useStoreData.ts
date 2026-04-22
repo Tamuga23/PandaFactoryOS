@@ -176,25 +176,68 @@ export function useStoreData() {
   const recordPurchase = async (purchase: Omit<Purchase, 'ownerId'>) => {
     if (!user) return;
     try {
-      const batch = writeBatch(db);
-      const fullPurchase = { ...purchase, ownerId: user.uid };
-      batch.set(doc(db, 'purchases', purchase.id), fullPurchase);
+      const fullPurchase: any = { 
+        ...purchase, 
+        ownerId: user.uid,
+        status: purchase.status || 'OPEN',
+        stockAdded: purchase.stockAdded || false
+      };
+      
+      // Strip all undefined fields
+      Object.keys(fullPurchase).forEach(key => fullPurchase[key] === undefined && delete fullPurchase[key]);
+      if (fullPurchase.items) {
+        fullPurchase.items.forEach((item: any) => {
+          Object.keys(item).forEach(key => item[key] === undefined && delete item[key]);
+        });
+      }
 
-      // Increase stock
-      purchase.items.forEach(item => {
-        const productRef = doc(db, 'products', item.id);
-        const p = products.find(prod => prod.id === item.id);
-        if (p) {
-          batch.update(productRef, {
-            stock: p.stock + item.quantity,
-            updatedAt: Date.now()
-          });
-        }
-      });
-
-      await batch.commit();
+      await setDoc(doc(db, 'purchases', purchase.id), fullPurchase);
     } catch (e) {
       handleFirestoreError(e, 'create', `purchases/${purchase.id}`);
+    }
+  };
+
+  const updatePurchase = async (purchase: Purchase) => {
+    if (!user) return;
+    try {
+      const batch = writeBatch(db);
+      let updatedPurchase = { ...purchase };
+
+      // Strip all undefined fields to avoid Firestore errors
+      Object.keys(updatedPurchase).forEach(key => {
+        if ((updatedPurchase as any)[key] === undefined) {
+          delete (updatedPurchase as any)[key];
+        }
+      });
+      if (updatedPurchase.items) {
+        updatedPurchase.items.forEach(item => {
+          Object.keys(item).forEach(key => {
+            if ((item as any)[key] === undefined) delete (item as any)[key];
+          });
+        });
+      }
+
+      // Phase 2: If received and stock hasn't been added yet, add it
+      if (updatedPurchase.receptionDate && !updatedPurchase.stockAdded) {
+        updatedPurchase.status = 'CLOSED';
+        updatedPurchase.stockAdded = true;
+
+        updatedPurchase.items.forEach(item => {
+          const productRef = doc(db, 'products', item.id);
+          const p = products.find(prod => prod.id === item.id);
+          if (p) {
+            batch.update(productRef, {
+              stock: p.stock + item.quantity,
+              updatedAt: Date.now()
+            });
+          }
+        });
+      }
+
+      batch.update(doc(db, 'purchases', purchase.id), updatedPurchase as any);
+      await batch.commit();
+    } catch (e) {
+      handleFirestoreError(e, 'update', `purchases/${purchase.id}`);
     }
   };
 
@@ -233,6 +276,7 @@ export function useStoreData() {
     updateSale,
     deleteSale,
     recordPurchase,
+    updatePurchase,
     deletePurchase,
     updateCompanyInfo,
     refreshMetrics: () => {}

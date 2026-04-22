@@ -45,6 +45,7 @@ export interface Sale {
   exchangeRate: number;
   paymentMethod: 'EFECTIVO' | 'TRANSFERENCIA' | 'TARJETA' | 'CREDITO';
   paymentReference?: string;
+  notes?: string;
   
   ownerId: string;
   status: 'completed' | 'returned' | 'cancelled';
@@ -56,16 +57,38 @@ export interface PurchaseItem {
   sku: string;
   cost: number;
   quantity: number;
+  color?: string;
   serialNumbers?: string[]; // Pilar 1: Seriales para ingresos
 }
+
+export type PurchaseStatus = 'OPEN' | 'CLOSED';
+export type ShippingModality = 'Sea Cargo' | 'Air Cargo';
 
 export interface Purchase {
   id: string;
   date: number;
   supplier: string;
+  platform?: string;
   notes?: string;
   items: PurchaseItem[];
   totalCost: number;
+  
+  // Logistics Level 1 (Order)
+  shippingChannel?: string;
+  shippingModality?: ShippingModality;
+  orderNumber?: string;
+  financing?: string;
+  estimatedWeight?: number;
+  
+  // Logistics Level 2 (Tracking & Reception)
+  trackingId?: string;
+  trackingStatus?: string;
+  agentDeliveryDate?: number;
+  receptionDate?: number;
+  finalWeight?: number;
+
+  status: PurchaseStatus;
+  stockAdded: boolean;
   
   // Pilar 1: Moneda en compras
   currency: 'NIO' | 'USD';

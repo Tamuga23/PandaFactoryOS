@@ -32,6 +32,7 @@ export default function PurchaseRegistration({
   const [formData, setFormData] = useState({
     itemId: '',
     description: '',
+    color: '', // NEW
     unitCost: 0,
     quantity: 1,
     supplier: DEFAULT_SUPPLIERS[0],
@@ -39,6 +40,9 @@ export default function PurchaseRegistration({
     shippingChannel: SHIPPING_CHANNELS[0],
     shippingMode: SHIPPING_MODES[0],
     acquisitionDate: new Date().toISOString().split('T')[0],
+    orderNumber: '', // NEW
+    financing: '', // NEW
+    estimatedWeight: '', // NEW
     catalogPriceUSD: 0,
     category: '',
     imageFile: null as File | null,
@@ -150,12 +154,16 @@ export default function PurchaseRegistration({
       const purchaseData = {
         itemId: finalItemId,
         description: formData.description,
+        color: formData.color,
         unitCost: formData.unitCost,
         quantity: formData.quantity,
         supplier: formData.supplier,
         platform: formData.platform,
         shippingChannel: formData.shippingChannel,
         shippingMode: formData.shippingMode,
+        orderNumber: formData.orderNumber,
+        financing: formData.financing,
+        estimatedWeight: formData.estimatedWeight ? Number(formData.estimatedWeight) : undefined,
         date: new Date(formData.acquisitionDate).getTime(),
       };
 
@@ -352,6 +360,56 @@ export default function PurchaseRegistration({
               />
             </div>
 
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase text-zinc-500 font-bold tracking-wider">Color (Opcional)</label>
+              <input
+                type="text"
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2.5 text-sm text-zinc-200 outline-none"
+                value={formData.color}
+                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                placeholder="Ej. Negro, Azul"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase text-zinc-500 font-bold tracking-wider">No. Orden (Opcional)</label>
+              <input
+                type="text"
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2.5 text-sm text-zinc-200 outline-none"
+                value={formData.orderNumber}
+                onChange={(e) => setFormData({ ...formData, orderNumber: e.target.value })}
+                placeholder="Ej. 114-1234567-890"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase text-zinc-500 font-bold tracking-wider">Financiación</label>
+              <select
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2.5 text-sm text-zinc-200 outline-none"
+                value={formData.financing}
+                onChange={(e) => setFormData({ ...formData, financing: e.target.value })}
+              >
+                <option value="">-- Seleccionar --</option>
+                <option value="Fondos Propios">Fondos Propios</option>
+                <option value="Tarjeta Socio A">Tarjeta Socio A</option>
+                <option value="Tarjeta B">Tarjeta B</option>
+                <option value="Crédito Proveedor">Crédito Proveedor</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase text-zinc-500 font-bold tracking-wider">Peso Estimado (lbs)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2.5 text-sm text-zinc-200 outline-none"
+                value={formData.estimatedWeight}
+                onChange={(e) => setFormData({ ...formData, estimatedWeight: e.target.value })}
+                placeholder="Ej. 2.5"
+              />
+            </div>
+
             <div className="space-y-2 md:col-span-2">
               <label className="text-[10px] uppercase text-zinc-500 font-bold tracking-wider">Proveedor</label>
               {isCustomSupplier ? (
@@ -435,7 +493,7 @@ export default function PurchaseRegistration({
                {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
                {isSubmitting 
                   ? 'Procesando...' 
-                  : isNewProduct ? 'Crear Producto y Registrar Compra' : 'Registrar Compra y Añadir Stock'
+                  : isNewProduct ? 'Crear Producto y Registrar Orden' : 'Registrar Orden de Compra'
                }
              </button>
           </div>

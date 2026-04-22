@@ -222,7 +222,7 @@ export default function ProductCatalog({
               <option value="">-- Seleccione un producto --</option>
               {catalog.map(product => (
                 <option key={product.id} value={product.id}>
-                  [{product.id}] {product.description}
+                  {product.description}
                 </option>
               ))}
             </select>
@@ -344,8 +344,23 @@ export default function ProductCatalog({
           <div>
             <label className="block text-sm font-medium text-zinc-300 mb-2">Imagen del Producto (Opcional)</label>
             <div className="flex items-center gap-4">
-              <label className="flex items-center justify-center w-12 h-12 rounded-lg bg-zinc-800 border border-zinc-700 hover:border-cyan-500 cursor-pointer transition-colors group">
-                <ImageIcon className="w-5 h-5 text-zinc-400 group-hover:text-cyan-400" />
+              <label className="flex items-center justify-center w-12 h-12 rounded-lg bg-zinc-800 border border-zinc-700 hover:border-cyan-500 cursor-pointer transition-colors group relative overflow-hidden shrink-0">
+                {(() => {
+                   const existingImg = isEditing && formData.id ? catalog.find(p => p.id === formData.id)?.imageUrl : null;
+                   const previewUrl = formData.imageFile ? URL.createObjectURL(formData.imageFile) : existingImg;
+                   
+                   if (previewUrl) {
+                     return (
+                       <>
+                         <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                           <ImageIcon className="w-5 h-5 text-white" />
+                         </div>
+                       </>
+                     );
+                   }
+                   return <ImageIcon className="w-5 h-5 text-zinc-400 group-hover:text-cyan-400" />;
+                })()}
                 <input
                   type="file"
                   accept="image/*"

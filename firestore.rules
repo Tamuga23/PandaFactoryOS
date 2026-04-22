@@ -17,7 +17,7 @@ service cloud.firestore {
     // Product Validation Blueprint
     function isValidProduct(data) {
       return data.keys().hasAll(['sku', 'name', 'price', 'cost', 'stock', 'minStockAlert', 'category', 'createdAt', 'updatedAt', 'ownerId'])
-        && data.keys().hasOnly(['id', 'sku', 'name', 'description', 'price', 'cost', 'stock', 'minStockAlert', 'category', 'imageBase64', 'createdAt', 'updatedAt', 'ownerId'])
+        && data.keys().hasOnly(['id', 'sku', 'name', 'description', 'price', 'cost', 'stock', 'minStockAlert', 'category', 'imageBase64', 'isReordering', 'createdAt', 'updatedAt', 'ownerId'])
         && data.sku is string && data.sku.size() <= 50
         && data.name is string && data.name.size() <= 100
         && data.price is number && data.price >= 0
@@ -30,7 +30,8 @@ service cloud.firestore {
         && (data.updatedAt is number || data.updatedAt is timestamp)
         && (!('id' in data) || (data.id is string && data.id.size() <= 128))
         && (!('description' in data) || (data.description is string && data.description.size() <= 1000))
-        && (!('imageBase64' in data) || (data.imageBase64 is string && data.imageBase64.size() <= 1048576));
+        && (!('imageBase64' in data) || (data.imageBase64 is string && data.imageBase64.size() <= 1048576))
+        && (!('isReordering' in data) || (data.isReordering is bool));
     }
 
     // Sale Validation Blueprint
@@ -46,8 +47,8 @@ service cloud.firestore {
     }
 
     function isValidSale(data) {
-      return data.keys().hasAll(['date', 'items', 'subtotal', 'tax', 'total', 'invoiceNumber', 'ownerId', 'documentType', 'clientDocumentType', 'currency', 'exchangeRate', 'paymentMethod'])
-        && data.keys().hasOnly(['date', 'items', 'subtotal', 'tax', 'total', 'discount', 'shipping', 'customerName', 'customerEmail', 'customerPhone', 'customerAddress', 'transport', 'invoiceNumber', 'ownerId', 'id', 'status', 'documentType', 'clientDocumentType', 'currency', 'exchangeRate', 'paymentMethod', 'clientDocumentNumber', 'paymentReference'])
+      return data.keys().hasAll(['date', 'items', 'subtotal', 'tax', 'total', 'invoiceNumber', 'ownerId'])
+        && data.keys().hasOnly(['date', 'items', 'subtotal', 'tax', 'total', 'discount', 'shipping', 'customerName', 'customerEmail', 'customerPhone', 'customerAddress', 'transport', 'invoiceNumber', 'ownerId', 'id', 'status', 'documentType', 'clientDocumentType', 'currency', 'exchangeRate', 'paymentMethod', 'clientDocumentNumber', 'paymentReference', 'notes'])
         && data.ownerId == request.auth.uid
         && (data.date is number || data.date is timestamp)
         && data.items is list && data.items.size() <= 100
@@ -56,13 +57,14 @@ service cloud.firestore {
         && data.tax is number
         && data.total is number
         && data.invoiceNumber is string && data.invoiceNumber.size() <= 50
-        && data.documentType in ['RECIBO_OFICIAL', 'PROFORMA']
-        && data.clientDocumentType in ['CEDULA', 'RUC', 'PASAPORTE', 'NINGUNO']
-        && data.currency in ['NIO', 'USD']
-        && data.exchangeRate is number && data.exchangeRate >= 0.01
-        && data.paymentMethod in ['EFECTIVO', 'TRANSFERENCIA', 'TARJETA', 'CREDITO']
+        && (!('documentType' in data) || (data.documentType in ['RECIBO_OFICIAL', 'PROFORMA']))
+        && (!('clientDocumentType' in data) || (data.clientDocumentType in ['CEDULA', 'RUC', 'PASAPORTE', 'NINGUNO']))
+        && (!('currency' in data) || (data.currency in ['NIO', 'USD']))
+        && (!('exchangeRate' in data) || (data.exchangeRate is number && data.exchangeRate >= 0.01))
+        && (!('paymentMethod' in data) || (data.paymentMethod in ['EFECTIVO', 'TRANSFERENCIA', 'TARJETA', 'CREDITO']))
         && (!('clientDocumentNumber' in data) || (data.clientDocumentNumber is string))
         && (!('paymentReference' in data) || (data.paymentReference is string))
+        && (!('notes' in data) || (data.notes is string))
         && (!('status' in data) || (data.status in ['completed', 'returned', 'cancelled']))
         && (!('customerName' in data) || (data.customerName is string && data.customerName.size() <= 100))
         && (!('customerEmail' in data) || (data.customerEmail is string && data.customerEmail.size() <= 100))
@@ -76,19 +78,37 @@ service cloud.firestore {
 
     function isValidPurchaseItem(item) {
       return item.keys().hasAll(['id', 'sku', 'name', 'cost', 'quantity'])
-        && item.keys().hasOnly(['id', 'sku', 'name', 'cost', 'quantity', 'serialNumbers'])
+        && item.keys().hasOnly(['id', 'sku', 'name', 'cost', 'quantity', 'serialNumbers', 'color'])
         && item.id is string && item.cost is number && item.quantity is number
-        && (!('serialNumbers' in item) || (item.serialNumbers is list && item.serialNumbers.size() == item.quantity));
+        && (!('serialNumbers' in item) || (item.serialNumbers is list && item.serialNumbers.size() == item.quantity))
+        && (!('color' in item) || (item.color is string));
     }
 
     function isValidPurchase(data) {
       return data.keys().hasAll(['date', 'items', 'totalCost', 'ownerId', 'currency', 'exchangeRate'])
-        && data.keys().hasOnly(['date', 'items', 'totalCost', 'supplier', 'notes', 'invoiceNumber', 'ownerId', 'id', 'currency', 'exchangeRate'])
+        && data.keys().hasOnly([
+           'date', 'items', 'totalCost', 'supplier', 'notes', 'invoiceNumber', 'ownerId', 'id', 'currency', 'exchangeRate',
+           'platform', 'shippingChannel', 'shippingModality', 'orderNumber', 'financing', 'estimatedWeight',
+           'trackingId', 'trackingStatus', 'agentDeliveryDate', 'receptionDate', 'finalWeight', 'status', 'stockAdded'
+        ])
         && data.ownerId == request.auth.uid
         && data.currency in ['NIO', 'USD']
         && data.exchangeRate is number && data.exchangeRate >= 0.01
         && data.items is list && (data.items.size() == 0 || isValidPurchaseItem(data.items[0]))
-        && data.totalCost is number;
+        && data.totalCost is number
+        && (!('status' in data) || (data.status in ['OPEN', 'CLOSED']))
+        && (!('stockAdded' in data) || (data.stockAdded is bool))
+        && (!('platform' in data) || (data.platform is string))
+        && (!('shippingChannel' in data) || (data.shippingChannel is string))
+        && (!('shippingModality' in data) || (data.shippingModality is string))
+        && (!('orderNumber' in data) || (data.orderNumber is string))
+        && (!('financing' in data) || (data.financing is string))
+        && (!('estimatedWeight' in data) || (data.estimatedWeight is number))
+        && (!('trackingId' in data) || (data.trackingId is string))
+        && (!('trackingStatus' in data) || (data.trackingStatus is string))
+        && (!('agentDeliveryDate' in data) || (data.agentDeliveryDate is number))
+        && (!('receptionDate' in data) || (data.receptionDate is number))
+        && (!('finalWeight' in data) || (data.finalWeight is number));
     }
 
     match /products/{productId} {
@@ -101,7 +121,7 @@ service cloud.firestore {
         && incoming().ownerId == existing().ownerId
         && incoming().createdAt == existing().createdAt
         && incoming().diff(existing()).affectedKeys().hasOnly([
-            'sku', 'name', 'description', 'price', 'cost', 'stock', 'minStockAlert', 'category', 'imageBase64', 'updatedAt'
+            'sku', 'name', 'description', 'price', 'cost', 'stock', 'minStockAlert', 'category', 'imageBase64', 'isReordering', 'updatedAt'
         ]);
       allow delete: if isSignedIn() && isValidId(productId) && existing().ownerId == request.auth.uid;
     }

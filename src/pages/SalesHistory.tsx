@@ -9,6 +9,7 @@ export default function SalesHistory() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 
   const filteredSales = sales.filter(s => 
     s.documentType !== 'PROFORMA' &&
@@ -16,9 +17,13 @@ export default function SalesHistory() {
     s.customerName?.toLowerCase().includes(searchTerm.toLowerCase()))
   ).sort((a, b) => b.date - a.date);
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Delete this sale record? This action cannot be undone and will not automatically revert stock.')) {
-      await deleteSale(id);
+  const handleDeleteClick = (id: string) => {
+    if (confirmingDelete === id) {
+      deleteSale(id);
+      setConfirmingDelete(null);
+    } else {
+      setConfirmingDelete(id);
+      setTimeout(() => setConfirmingDelete(null), 3000);
     }
   };
 
@@ -42,7 +47,7 @@ export default function SalesHistory() {
       customerPhone: formData.get('customerPhone') as string,
       customerAddress: formData.get('customerAddress') as string,
       transport: formData.get('transport') as string,
-      notes: formData.get('notes') as string,
+      notes: (formData.get('notes') as string) || editingSale.notes || '',
     } as any; // Cast for custom fields if any
 
     await updateSale(updatedSale);
@@ -147,8 +152,11 @@ export default function SalesHistory() {
                   <button onClick={() => handleEdit(sale)} className="p-2 text-zinc-400 hover:bg-zinc-800 hover:text-sky-400 rounded-lg transition-colors">
                     <Edit className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleDelete(sale.id)} className="p-2 text-zinc-400 hover:bg-rose-500/10 hover:text-rose-500 rounded-lg transition-colors">
-                    <Trash2 className="w-4 h-4" />
+                  <button 
+                    onClick={() => handleDeleteClick(sale.id)} 
+                    className={`p-2 transition-colors rounded-lg ${confirmingDelete === sale.id ? 'bg-rose-500/20 text-rose-500 font-bold text-xs' : 'text-zinc-400 hover:bg-rose-500/10 hover:text-rose-500'}`}
+                  >
+                    {confirmingDelete === sale.id ? 'Delete?' : <Trash2 className="w-4 h-4" />}
                   </button>
                </div>
             </div>

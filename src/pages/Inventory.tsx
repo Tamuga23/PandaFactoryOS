@@ -12,6 +12,17 @@ export default function Inventory() {
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+
+  const handleDeleteClick = (id: string) => {
+    if (confirmingDelete === id) {
+      deleteProduct(id);
+      setConfirmingDelete(null);
+    } else {
+      setConfirmingDelete(id);
+      setTimeout(() => setConfirmingDelete(null), 3000); // Reset after 3 seconds
+    }
+  };
 
   if (loading) return <div className="text-zinc-500">Loading inventory...</div>;
 
@@ -233,13 +244,11 @@ export default function Inventory() {
                       <Edit2 className="h-4 w-4 inline" />
                     </button>
                     <button 
-                      onClick={() => {
-                        if(window.confirm('Are you sure you want to delete this product?')) deleteProduct(product.id);
-                      }} 
-                      className="text-zinc-400 hover:text-rose-400 transition-colors"
+                      onClick={() => handleDeleteClick(product.id)} 
+                      className={`transition-colors ${confirmingDelete === product.id ? 'text-rose-500 font-bold' : 'text-zinc-400 hover:text-rose-400'}`}
                       title="Delete Product"
                     >
-                      <Trash2 className="h-4 w-4 inline" />
+                      {confirmingDelete === product.id ? 'Delete?' : <Trash2 className="h-4 w-4 inline" />}
                     </button>
                   </td>
                 </tr>

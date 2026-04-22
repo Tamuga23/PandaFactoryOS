@@ -42,6 +42,13 @@ export const compressImage = (base64Str: string, maxWidth = 800, maxHeight = 800
 };
 
 export const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(amount);
+};
+
+export const formatCurrencyNIO = (amount: number) => {
   return new Intl.NumberFormat('es-NI', {
     style: 'currency',
     currency: 'NIO',

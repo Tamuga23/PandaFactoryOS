@@ -71,10 +71,15 @@ export default function POS() {
   };
 
   const filteredProducts = useMemo(() => {
-    return products.filter(p => 
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      p.sku.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    return products.filter(p => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        p.name.toLowerCase().includes(searchLower) || 
+        p.sku.toLowerCase().includes(searchLower) ||
+        (p.category && p.category.toLowerCase().includes(searchLower)) ||
+        (p.description && p.description.toLowerCase().includes(searchLower))
+      );
+    });
   }, [products, searchTerm]);
 
   const addToCart = (product: Product) => {

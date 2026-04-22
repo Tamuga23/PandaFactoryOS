@@ -2,22 +2,28 @@ import React, { useState, useRef } from 'react';
 import { useStoreData } from '../hooks/useStoreData';
 import { Product } from '../types';
 import { formatCurrency, fileToBase64, compressImage } from '../lib/utils';
-import { Plus, Edit2, Trash2, Image as ImageIcon, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, Image as ImageIcon, Search, PackagePlus, AlertTriangle, ShoppingCart, Check } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function Inventory() {
   const { products, loading, addProduct, updateProduct, deleteProduct } = useStoreData();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isStockModalOpen, setIsStockModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   if (loading) return <div className="text-zinc-500">Loading inventory...</div>;
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProducts = products.filter(p => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      p.name.toLowerCase().includes(searchLower) || 
+      p.sku.toLowerCase().includes(searchLower) ||
+      (p.category && p.category.toLowerCase().includes(searchLower)) ||
+      (p.description && p.description.toLowerCase().includes(searchLower))
+    );
+  });
 
   const openModal = (product?: Product) => {
     if (product) {
@@ -28,10 +34,59 @@ export default function Inventory() {
     setIsModalOpen(true);
   };
 
+  const openStockModal = (product: Product) => {
+    setEditingProduct(product);
+    setIsStockModalOpen(true);
+  };
+
   const closeModal = () => {
     if (isSaving) return;
     setIsModalOpen(false);
+    setIsStockModalOpen(false);
     setEditingProduct(null);
+  };
+
+  const handleToggleReorder = async (product: Product) => {
+    try {
+      await updateProduct({
+        ...product,
+        isReordering: !product.isReordering,
+        updatedAt: Date.now()
+      });
+    } catch (error) {
+      console.error('Error toggling reorder status:', error);
+      alert('Error updating reorder status.');
+    }
+  };
+
+  const handleStockSave = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+    
+    setIsSaving(true);
+    const formData = new FormData(e.currentTarget);
+    const newStock = Number(formData.get('stock'));
+    const newMinAlert = Number(formData.get('minStockAlert'));
+
+    // Automatically remove the reordering flag if stock goes above the min alert
+    const isNowLowStock = newStock <= newMinAlert;
+    const updatedIsReordering = isNowLowStock ? editingProduct.isReordering : false;
+
+    try {
+      await updateProduct({
+        ...editingProduct,
+        stock: newStock,
+        minStockAlert: newMinAlert,
+        isReordering: updatedIsReordering,
+        updatedAt: Date.now()
+      });
+      closeModal();
+    } catch (error) {
+      console.error('Error updating stock:', error);
+      alert('Error updating stock. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -143,15 +198,38 @@ export default function Inventory() {
                   <td className={`px-4 py-2 text-right ${isLowStock ? 'text-rose-400 font-medium' : 'text-zinc-300'}`}>
                     {product.stock}
                   </td>
-                  <td className="px-4 py-2 text-center">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] ${
-                      isLowStock ? 'bg-rose-500/10 text-rose-500' : 'bg-cyan-500/10 text-cyan-500'
-                    }`}>
-                      {isLowStock ? 'Low Stock' : 'Active'}
-                    </span>
+                  <td className="px-4 py-2">
+                    <div className="flex flex-col items-center justify-center gap-1.5">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                        isLowStock ? 'bg-rose-500/10 text-rose-500 font-medium border border-rose-500/20' : 'bg-cyan-500/10 text-cyan-500 font-medium'
+                      }`}>
+                        {isLowStock ? 'Low Stock' : 'Active'}
+                      </span>
+                      {isLowStock && (
+                        <button 
+                          onClick={() => handleToggleReorder(product)}
+                          className={`text-[9px] px-2 py-0.5 rounded flex items-center justify-center gap-1 transition-colors w-full ${
+                            product.isReordering 
+                              ? 'bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 font-bold border border-amber-500/30' 
+                              : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 border border-zinc-700'
+                          }`}
+                          title={product.isReordering ? "Mark as not requested" : "Mark for reorder"}
+                        >
+                          {product.isReordering ? <Check className="w-3 h-3" /> : <ShoppingCart className="w-3 h-3" />}
+                          {product.isReordering ? 'Reordered' : 'Reorder'}
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-2 text-right text-sm font-medium">
-                    <button onClick={() => openModal(product)} className="text-zinc-400 hover:text-cyan-400 mr-4 transition-colors">
+                    <button 
+                      onClick={() => openStockModal(product)} 
+                      className="text-cyan-600 hover:text-cyan-400 mr-4 transition-colors p-1.5 bg-cyan-500/10 rounded"
+                      title="Adjust Stock"
+                    >
+                      <PackagePlus className="h-4 w-4 inline" />
+                    </button>
+                    <button onClick={() => openModal(product)} className="text-zinc-400 hover:text-cyan-400 mr-4 transition-colors" title="Edit Product">
                       <Edit2 className="h-4 w-4 inline" />
                     </button>
                     <button 
@@ -159,6 +237,7 @@ export default function Inventory() {
                         if(window.confirm('Are you sure you want to delete this product?')) deleteProduct(product.id);
                       }} 
                       className="text-zinc-400 hover:text-rose-400 transition-colors"
+                      title="Delete Product"
                     >
                       <Trash2 className="h-4 w-4 inline" />
                     </button>
@@ -174,6 +253,72 @@ export default function Inventory() {
           </table>
         </div>
       </div>
+
+      {/* Quick Stock Modal */}
+      {isStockModalOpen && (
+        <div className="fixed z-50 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div className="fixed inset-0 bg-zinc-950/75 transition-opacity backdrop-blur-sm" aria-hidden="true" onClick={closeModal}></div>
+            <div className="relative inline-block align-bottom bg-zinc-900 border border-zinc-700 rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm w-full">
+              <form onSubmit={handleStockSave}>
+                <div className="bg-zinc-900 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-cyan-500/10 rounded-lg shrink-0">
+                      <PackagePlus className="h-6 w-6 text-cyan-500" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg leading-6 font-medium text-zinc-100" id="modal-title">
+                        Manage Stock
+                      </h3>
+                      <p className="text-xs text-zinc-400 truncate">{editingProduct?.name}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4 mt-4">
+                    <div>
+                      <label className="block text-xs uppercase text-zinc-500 font-bold mb-1">Current Stock Level</label>
+                      <div className="flex items-center gap-2">
+                        <button type="button" onClick={() => {
+                          const input = document.getElementById('quick-stock-input') as HTMLInputElement;
+                          if(input) input.value = String(Math.max(0, Number(input.value) - 1));
+                        }} className="p-2 bg-zinc-800 rounded text-zinc-400 hover:text-white">-</button>
+                        <input id="quick-stock-input" required type="number" name="stock" defaultValue={editingProduct?.stock} className="block w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-center text-lg font-bold text-cyan-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500" />
+                        <button type="button" onClick={() => {
+                          const input = document.getElementById('quick-stock-input') as HTMLInputElement;
+                          if(input) input.value = String(Number(input.value) + 1);
+                        }} className="p-2 bg-zinc-800 rounded text-zinc-400 hover:text-white">+</button>
+                      </div>
+                    </div>
+                    <div className="bg-zinc-950 p-3 rounded border border-zinc-800">
+                      <label className="flex items-center gap-2 text-xs uppercase text-zinc-500 font-bold mb-2">
+                         <AlertTriangle className="w-3 h-3 text-amber-500" /> Low Stock Alert Threshold
+                      </label>
+                      <input required type="number" name="minStockAlert" defaultValue={editingProduct?.minStockAlert} className="block w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-sm text-zinc-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500" />
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-zinc-900 border-t border-zinc-800 px-4 py-3 sm:px-6 flex gap-3 justify-end">
+                  <button 
+                    type="button" 
+                    onClick={closeModal} 
+                    disabled={isSaving}
+                    className="w-full sm:w-auto inline-flex justify-center rounded-lg border border-zinc-700 px-4 py-2 bg-zinc-800 text-sm font-medium text-zinc-300 hover:bg-zinc-700 focus:outline-none transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={isSaving}
+                    className="w-full sm:w-auto inline-flex justify-center rounded-lg border border-transparent px-4 py-2 bg-cyan-600 text-sm font-medium text-white hover:bg-cyan-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 transition-colors disabled:opacity-50"
+                  >
+                    {isSaving ? 'Saving...' : 'Update Stock'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Overlay & Content */}
       {isModalOpen && (

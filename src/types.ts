@@ -9,6 +9,7 @@ export interface Product {
   minStockAlert: number;
   category: string;
   imageBase64?: string;
+  isReordering?: boolean;
   createdAt: number;
   updatedAt: number;
 }

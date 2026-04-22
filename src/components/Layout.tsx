@@ -1,7 +1,7 @@
+import { useState, ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, BarChart3, Store, LogOut, History, ShoppingBag, Settings as SettingsIcon, PackageOpen } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, BarChart3, Store, LogOut, History, ShoppingBag, Settings as SettingsIcon, PackageOpen, Menu, X } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { ReactNode } from 'react';
 import { useStoreData } from '../hooks/useStoreData';
 import { logout } from '../lib/db';
 
@@ -19,14 +19,28 @@ const navigation = [
 export default function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { stats, user, companyInfo } = useStoreData();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const logoSrc = companyInfo?.logoBase64 || "/logo.png";
 
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
   return (
-    <div className="min-h-screen bg-zinc-950 flex text-zinc-200">
-      {/* Sidebar */}
-      <div className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col hidden md:flex">
-        <div className="p-6 border-b border-zinc-800">
+    <div className="min-h-screen bg-zinc-950 flex text-zinc-200 overflow-hidden relative">
+      {/* Mobile Menu Backdrop */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
+          onClick={closeMobileMenu}
+        />
+      )}
+
+      {/* Sidebar (Desktop & Mobile) */}
+      <div className={cn(
+        "fixed md:static inset-y-0 left-0 z-50 w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col transition-transform duration-300 ease-in-out",
+        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+      )}>
+        <div className="p-6 border-b border-zinc-800 flex justify-between items-center bg-zinc-900 z-10 w-full relative">
           <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
             {companyInfo?.logoBase64 ? (
               <img src={companyInfo.logoBase64} alt="pandastore" className="w-8 h-8 rounded-full object-cover border border-zinc-800 bg-white" />
@@ -35,14 +49,21 @@ export default function Layout({ children }: { children: ReactNode }) {
             )}
             <span className="text-white">panda</span><span className="-ml-1 bg-gradient-to-r from-cyan-400 to-[#0a85a8] bg-clip-text text-transparent">store</span>
           </h1>
+          <button 
+            className="md:hidden p-2 text-zinc-400 hover:text-white"
+            onClick={closeMobileMenu}
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar bg-zinc-900 relative z-0">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (
               <Link
                 key={item.name}
                 to={item.href}
+                onClick={closeMobileMenu}
                 className={cn(
                   isActive
                     ? 'bg-zinc-800 text-white shadow-sm'
@@ -64,7 +85,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         </nav>
         {/* Low Stock Alert embedded in sidebar */}
         {stats && stats.lowStockItems.length > 0 && (
-          <div className="p-4 border-t border-zinc-800">
+          <div className="p-4 border-t border-zinc-800 bg-zinc-900 relative z-0">
             <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
               <p className="text-xs font-semibold text-rose-400 uppercase tracking-wider mb-1">Low Stock Alert</p>
               <p className="text-sm text-rose-200">{stats.lowStockItems.length} items need attention</p>
@@ -76,11 +97,22 @@ export default function Layout({ children }: { children: ReactNode }) {
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-zinc-950">
         {/* Mobile Header */}
-        <div className="md:hidden flex items-center justify-between bg-zinc-900 border-b border-zinc-800 px-4 py-3">
-          <div className="flex items-center">
-            <img src={logoSrc} alt="pandastore" className="w-6 h-6 mr-2 rounded-full object-cover border border-zinc-800" onError={(e) => { e.currentTarget.style.display='none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
-            <Store className="w-6 h-6 text-cyan-400 mr-2 hidden" />
-            <span className="text-xl font-bold tracking-tight"><span className="text-white">panda</span><span className="bg-gradient-to-r from-cyan-400 to-[#0a85a8] bg-clip-text text-transparent">store</span></span>
+        <div className="md:hidden flex items-center justify-between bg-zinc-900 border-b border-zinc-800 px-4 py-3 shrink-0">
+          <div className="flex items-center gap-3">
+            <button 
+              className="p-2 -ml-2 text-zinc-400 hover:text-white cursor-pointer"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            <div className="flex items-center">
+              {companyInfo?.logoBase64 ? (
+                <img src={companyInfo.logoBase64} alt="pandastore" className="w-6 h-6 mr-2 rounded-full object-cover border border-zinc-800 bg-white" />
+              ) : (
+                <Store className="w-6 h-6 text-cyan-400 mr-2" />
+              )}
+              <span className="text-lg font-bold tracking-tight"><span className="text-white">panda</span><span className="bg-gradient-to-r from-cyan-400 to-[#0a85a8] bg-clip-text text-transparent">store</span></span>
+            </div>
           </div>
           <button onClick={logout} className="p-2 text-zinc-400 hover:text-zinc-200 rounded-md bg-zinc-800/50">
             <LogOut className="w-5 h-5" />

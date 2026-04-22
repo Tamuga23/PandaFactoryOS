@@ -75,17 +75,17 @@ export default function SalesHistory() {
       <div className="grid gap-4">
         {filteredSales.map(sale => (
           <div key={sale.id} className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-lg group">
-            <div className="p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-zinc-800/50">
-               <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-lg ${
+            <div className="p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-zinc-800/50">
+               <div className="flex items-center gap-4 w-full lg:w-auto">
+                  <div className={`p-3 rounded-lg flex-shrink-0 ${
                     sale.status === 'completed' ? 'bg-cyan-500/10 text-cyan-500' :
                     sale.status === 'returned' ? 'bg-amber-500/10 text-amber-500' :
                     'bg-rose-500/10 text-rose-500'
                   }`}>
                      <FileText className="w-6 h-6" />
                   </div>
-                  <div>
-                     <h4 className="font-bold text-zinc-100 flex items-center gap-2">
+                  <div className="min-w-0">
+                     <h4 className="font-bold text-zinc-100 flex items-center gap-2 flex-wrap">
                        {sale.invoiceNumber}
                        <span className={`text-[10px] uppercase px-2 py-0.5 rounded-full ${
                         sale.status === 'completed' ? 'bg-cyan-500/10 text-cyan-500' :
@@ -95,30 +95,30 @@ export default function SalesHistory() {
                          {sale.status || 'completed'}
                        </span>
                      </h4>
-                     <p className="text-xs text-zinc-500 flex items-center gap-1">
+                     <p className="text-xs text-zinc-500 flex items-center gap-1 mt-0.5">
                         <Calendar className="w-3 h-3" /> {new Date(sale.date).toLocaleString()}
                      </p>
                   </div>
                </div>
 
-               <div className="flex-1 md:px-8 grid grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="text-xs space-y-1">
+               <div className="flex-1 w-full lg:px-8 grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="text-xs space-y-1 min-w-0">
                      <p className="text-zinc-500 font-bold uppercase">Customer</p>
-                     <p className="text-zinc-300 flex items-center gap-1"><User className="w-3 h-3" /> {sale.customerName || 'N/A'}</p>
-                     <p className="text-zinc-400 flex items-center gap-1"><Phone className="w-3 h-3" /> {sale.customerPhone || '-'}</p>
+                     <p className="text-zinc-300 flex items-center gap-1 truncate"><User className="w-3 h-3 shrink-0" /> <span className="truncate">{sale.customerName || 'N/A'}</span></p>
+                     <p className="text-zinc-400 flex items-center gap-1 truncate"><Phone className="w-3 h-3 shrink-0" /> <span className="truncate">{sale.customerPhone || '-'}</span></p>
                   </div>
-                  <div className="text-xs space-y-1 hidden lg:block">
+                  <div className="text-xs space-y-1 hidden md:block min-w-0">
                      <p className="text-zinc-500 font-bold uppercase">Location/Transp</p>
-                     <p className="text-zinc-300 flex items-center gap-1"><MapPin className="w-3 h-3" /> {sale.customerAddress?.slice(0, 20)}...</p>
-                     <p className="text-cyan-500 font-bold uppercase">{sale.transport}</p>
+                     <p className="text-zinc-300 flex items-center gap-1 truncate"><MapPin className="w-3 h-3 shrink-0" /> <span className="truncate">{sale.customerAddress || 'N/A'}</span></p>
+                     <p className="text-cyan-500 font-bold uppercase truncate">{sale.transport}</p>
                   </div>
-                  <div className="text-right flex flex-col justify-center">
+                  <div className="text-left md:text-right flex flex-col justify-center">
                      <p className="text-zinc-500 text-[10px] font-bold uppercase">Grand Total</p>
-                     <p className="text-xl font-bold text-cyan-400">{formatCurrency(sale.total)}</p>
+                     <p className="text-xl font-bold text-cyan-400 truncate">{formatCurrency(sale.total)}</p>
                   </div>
                </div>
 
-               <div className="flex items-center gap-2">
+               <div className="flex items-center gap-2 w-full lg:w-auto justify-end mt-2 lg:mt-0">
                   {/* Status Actions */}
                   <div className="flex items-center bg-zinc-800 rounded-lg p-1">
                     <button 

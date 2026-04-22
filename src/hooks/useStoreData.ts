@@ -212,7 +212,7 @@ export function useStoreData() {
     return {
       totalProducts: products.length,
       totalStockValue: products.reduce((acc, p) => acc + (p.price * p.stock), 0),
-      lowStockItems: products.filter(p => p.stock <= p.minStockAlert),
+      lowStockItems: products.filter(p => p.stock <= p.minStockAlert && !p.isReordering),
       recentSales: [...realSales].sort((a, b) => b.date - a.date).slice(0, 5),
       totalSalesValue: realSales.reduce((acc, s) => acc + (s.status === 'completed' ? s.total : 0), 0),
     };
